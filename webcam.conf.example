@@ -1,0 +1,11 @@
+# omarchy-privacy webcam override — copy to ~/.config/privacy-bar/webcam.conf
+#
+# By default the plugin auto-detects the first USB device that exposes a UVC
+# video interface. Set either value below to override, then re-run
+#   sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh
+
+# Pin a specific camera by USB vendor:product id (see `lsusb`).
+#WEBCAM_USB_ID=13d3:56a2
+
+# Group granted write access to the device's `authorized` attribute.
+#WEBCAM_GROUP=wheel

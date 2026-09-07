@@ -5,16 +5,16 @@
 # has no memory of what was set before shutdown — see webcam-restore.sh).
 STATE_FILE="/var/lib/privacy-bar/webcam-state"
 
-# Find webcam authorized file path
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/webcam-lib.sh"
+
+# Command the user must run once to grant non-root access to the webcam.
+SETUP_CMD="sudo bash '$SCRIPT_DIR/setup_udev.sh'"
+
+# Find the webcam's "authorized" sysfs file (empty if no webcam present).
 CAM_FILE=""
-for dev in /sys/bus/usb/devices/*; do
-  if [ -f "$dev/idVendor" ] && [ -f "$dev/idProduct" ]; then
-    if [ "$(cat "$dev/idVendor" 2>/dev/null)" = "13d3" ] && [ "$(cat "$dev/idProduct" 2>/dev/null)" = "56a2" ]; then
-      CAM_FILE="$dev/authorized"
-      break
-    fi
-  fi
-done
+CAM_DIR="$(find_webcam_sysfs || true)"
+[ -n "$CAM_DIR" ] && [ -f "$CAM_DIR/authorized" ] && CAM_FILE="$CAM_DIR/authorized"
 
 get_status() {
   local mic_muted=false
@@ -80,7 +80,7 @@ set_privacy() {
         write_cam 1
       fi
     else
-      echo "Error: Camera control file not writable. Please run the setup script: sudo bash /home/groot/.config/omarchy/bar/scripts/setup_udev.sh" >&2
+      echo "Error: Camera control file not writable. Please run: $SETUP_CMD" >&2
     fi
   fi
 }
@@ -140,7 +140,7 @@ case "$1" in
       if [ -w "$CAM_FILE" ]; then
         write_cam 1
       else
-        echo "Error: Camera control file not writable. Please run the setup script: sudo bash /home/groot/.config/omarchy/bar/scripts/setup_udev.sh" >&2
+        echo "Error: Camera control file not writable. Please run: $SETUP_CMD" >&2
         exit 1
       fi
     fi
@@ -151,7 +151,7 @@ case "$1" in
       if [ -w "$CAM_FILE" ]; then
         write_cam 0
       else
-        echo "Error: Camera control file not writable. Please run the setup script: sudo bash /home/groot/.config/omarchy/bar/scripts/setup_udev.sh" >&2
+        echo "Error: Camera control file not writable. Please run: $SETUP_CMD" >&2
         exit 1
       fi
     fi
@@ -166,7 +166,7 @@ case "$1" in
           write_cam 0
         fi
       else
-        echo "Error: Camera control file not writable. Please run the setup script: sudo bash /home/groot/.config/omarchy/bar/scripts/setup_udev.sh" >&2
+        echo "Error: Camera control file not writable. Please run: $SETUP_CMD" >&2
         exit 1
       fi
     fi

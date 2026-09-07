@@ -18,8 +18,9 @@ A privacy-controls widget for the [Omarchy](https://omarchy.org/) status bar
 
 - Omarchy shell (Quickshell-based bar)
 - `wireplumber` (`wpctl`)
-- A USB webcam, and one-time root setup for non-root access to its
+- A USB webcam (UVC), and one-time root setup for non-root access to its
   `authorized` attribute (see below)
+- `udevadm`, `systemd` (standard on Omarchy/Arch)
 
 ## Install
 
@@ -42,24 +43,42 @@ re-run `setup_udev.sh` so the webcam restore service points at the new path.
 
 `setup_udev.sh` (run with `sudo`):
 
-- locates the webcam by USB vendor:product id,
+- auto-detects the webcam (first USB device exposing a UVC video interface),
 - installs `/etc/udev/rules.d/99-webcam-toggle.rules` so members of the `wheel`
   group can write the device's `authorized` attribute,
 - installs a systemd unit that runs `webcam-restore.sh` on device add to
-  re-apply the last saved state,
+  re-apply the last saved state (the detected USB id is baked into the unit's
+  environment so early-boot lookups are deterministic),
 - creates `/var/lib/privacy-bar/` for the saved state.
+
+## Configuration
+
+Auto-detection covers the common single-webcam laptop. Override it with a
+`webcam.conf` (see `webcam.conf.example`):
+
+```sh
+mkdir -p ~/.config/privacy-bar
+printf 'WEBCAM_USB_ID=13d3:56a2\n' > ~/.config/privacy-bar/webcam.conf
+sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh   # re-run after changing
+```
+
+- `WEBCAM_USB_ID=VID:PID` — pick a specific camera (from `lsusb`), e.g. when the
+  machine has both an RGB and an IR camera.
+- `WEBCAM_GROUP=wheel` — the group granted write access (default `wheel`).
+
+Both are also read from the environment, so
+`WEBCAM_USB_ID=... sudo -E setup_udev.sh` works too.
 
 ## Notes
 
-- **The webcam is identified by a hard-coded USB id** (`13d3:56a2`,
-  "USB2.0 HD UVC WebCam") in `privacy-control.sh`, `webcam-restore.sh`, and the
-  udev rule. Change these three to match your camera (`lsusb`).
-- Absolute paths are hard-coded as `/home/groot/…` in `privacy.qml` (the
-  `privacy-control.sh` location) and in `setup_udev.sh` (`RESTORE_SCRIPT`).
-  Edit both if your username isn't `groot`.
+- Paths are resolved relative to the installed plugin folder — no username is
+  hard-coded. `privacy.qml` finds its backend via `Qt.resolvedUrl(".")`;
+  `setup_udev.sh` bakes its own directory into the systemd unit.
 - `omarchy update` / `omarchy refresh shell` rewrites `shell.json` and drops the
-  `privacy` layout entry (widget files survive). Re-add it and
-  `omarchy restart shell`.
+  `privacy` layout entry (widget files survive). Re-run
+  `omarchy plugin enable groot.privacy` and `omarchy restart shell`.
+- After an `omarchy plugin update` that relocates the folder, re-run
+  `setup_udev.sh` so the restore service points at the new path.
 
 ## License
 

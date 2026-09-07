@@ -15,7 +15,7 @@ PRODUCT_ID="56a2"
 RULE_FILE="/etc/udev/rules.d/99-webcam-toggle.rules"
 STATE_DIR="/var/lib/privacy-bar"
 STATE_FILE="$STATE_DIR/webcam-state"
-RESTORE_SCRIPT="/home/groot/.config/omarchy/bar/scripts/webcam-restore.sh"
+RESTORE_SCRIPT="$(cd "$(dirname "$0")" && pwd)/webcam-restore.sh"
 SERVICE_FILE="/etc/systemd/system/privacy-webcam-restore.service"
 
 echo "Creating persistent state store at $STATE_FILE..."

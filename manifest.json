@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/omarchy/omarchy/main/schemas/plugin.json",
+  "schemaVersion": 1,
+  "id": "groot.privacy",
+  "name": "Privacy Controls",
+  "version": "1.0.0",
+  "author": "groot",
+  "license": "MIT",
+  "description": "One-click microphone mute and webcam power-off in the bar, with udev-backed webcam state that survives reboot/resume.",
+  "repository": "https://github.com/GrootAiInfinity/omarchy-privacy",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "privacy.qml"
+  },
+  "barWidget": {
+    "displayName": "Privacy Controls",
+    "description": "Bar icon that reflects mic/webcam state; click for mute + webcam-power toggles. The webcam toggle needs a one-time 'sudo setup_udev.sh' (the panel copies the command).",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

@@ -7,8 +7,15 @@ import qs.Commons
 
 Panel {
   id: root
-  moduleName: "custom.privacy"
-  ipcTarget: "custom.privacy"
+  moduleName: "groot.privacy"
+  ipcTarget: "groot.privacy"
+
+  // This plugin's own folder, wherever `omarchy plugin add` installed it.
+  readonly property string pluginDir: {
+    var dir = String(Qt.resolvedUrl("."))
+    return dir.replace(/^file:\/\//, "").replace(/\/$/, "")
+  }
+  readonly property string control: pluginDir + "/privacy-control.sh"
 
   property bool micMuted: false
   property bool cameraDisabled: false
@@ -86,7 +93,7 @@ Panel {
 
   Process {
     id: statusProc
-    command: ["/home/groot/.config/omarchy/bar/scripts/privacy-control.sh", "status"]
+    command: [root.control, "status"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -97,7 +104,7 @@ Panel {
 
   Process {
     id: toggleMicProc
-    command: ["/home/groot/.config/omarchy/bar/scripts/privacy-control.sh", "mic-toggle"]
+    command: [root.control, "mic-toggle"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -108,7 +115,7 @@ Panel {
 
   Process {
     id: toggleCamProc
-    command: ["/home/groot/.config/omarchy/bar/scripts/privacy-control.sh", "cam-toggle"]
+    command: [root.control, "cam-toggle"]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: {
@@ -230,7 +237,7 @@ Panel {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: {
-                root.bar.run("echo 'sudo bash /home/groot/.config/omarchy/bar/scripts/setup_udev.sh' | wl-copy")
+                root.bar.run("printf %s \"sudo bash '" + root.pluginDir + "/setup_udev.sh'\" | wl-copy")
                 root.bar.run("notify-send 'Privacy Center' 'Setup command copied to clipboard! Paste it in a terminal to enable webcam toggle.'")
               }
             }

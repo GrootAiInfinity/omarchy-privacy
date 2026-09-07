@@ -24,19 +24,19 @@ A privacy-controls widget for the [Omarchy](https://omarchy.org/) status bar
 ## Install
 
 ```sh
-git clone https://github.com/GrootAiInfinity/omarchy-privacy.git && cd omarchy-privacy && ./install.sh
+omarchy plugin add https://github.com/GrootAiInfinity/omarchy-privacy.git --enable
 ```
 
-That one line copies the widget + scripts into `~/.config/omarchy/`, adds
-`{ "id": "privacy", "type": "qml" }` to `bar.layout` in `shell.json` (backed
-up first, idempotently), rewrites hard-coded `$HOME` paths, and runs
-`omarchy restart shell`. The **mic toggle works immediately**. Requires `jq`.
-
-For the **webcam toggle**, run the one-time root setup it prints at the end:
+The **mic toggle works immediately**. For the **webcam toggle**, run the
+one-time root setup (the panel also copies this command to your clipboard):
 
 ```sh
-sudo ~/.config/omarchy/bar/scripts/setup_udev.sh
+sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh
 ```
+
+Remove with `omarchy plugin remove groot.privacy`; update with
+`omarchy plugin update groot.privacy`. After an update that moved the folder,
+re-run `setup_udev.sh` so the webcam restore service points at the new path.
 
 ## One-time root setup
 

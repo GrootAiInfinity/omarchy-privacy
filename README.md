@@ -24,28 +24,19 @@ A privacy-controls widget for the [Omarchy](https://omarchy.org/) status bar
 ## Install
 
 ```sh
-git clone https://github.com/<you>/omarchy-privacy.git
-cd omarchy-privacy
-./install.sh          # copies the widget + scripts into ~/.config/omarchy
-sudo ./bar/scripts/setup_udev.sh   # one-time: udev rule + restore service
+git clone https://github.com/GrootAiInfinity/omarchy-privacy.git && cd omarchy-privacy && ./install.sh
 ```
 
-`install.sh` copies:
+That one line copies the widget + scripts into `~/.config/omarchy/`, adds
+`{ "id": "privacy", "type": "qml" }` to `bar.layout` in `shell.json` (backed
+up first, idempotently), rewrites hard-coded `$HOME` paths, and runs
+`omarchy restart shell`. The **mic toggle works immediately**. Requires `jq`.
 
-| Repo path                          | Installed to                                              |
-|------------------------------------|----------------------------------------------------------|
-| `bar/modules/privacy.qml`          | `~/.config/omarchy/bar/modules/privacy.qml`               |
-| `bar/scripts/privacy-control.sh`   | `~/.config/omarchy/bar/scripts/privacy-control.sh`        |
-| `bar/scripts/setup_udev.sh`        | `~/.config/omarchy/bar/scripts/setup_udev.sh`             |
-| `bar/scripts/webcam-restore.sh`    | `~/.config/omarchy/bar/scripts/webcam-restore.sh`         |
+For the **webcam toggle**, run the one-time root setup it prints at the end:
 
-Then add the widget to `bar.layout` in `~/.config/omarchy/shell.json`:
-
-```json
-{ "id": "privacy", "type": "qml" }
+```sh
+sudo ~/.config/omarchy/bar/scripts/setup_udev.sh
 ```
-
-Reload with `omarchy restart shell`.
 
 ## One-time root setup
 

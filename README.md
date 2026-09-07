@@ -1,0 +1,75 @@
+# omarchy-privacy
+
+A privacy-controls widget for the [Omarchy](https://omarchy.org/) status bar
+(Quickshell). One click to mute the microphone and cut power to the webcam.
+
+## Features
+
+- Bar icon that reflects live state — mic live, webcam live, both live, or
+  fully secure.
+- Click opens a panel with two toggles:
+  - **Microphone** — `wpctl set-mute @DEFAULT_AUDIO_SOURCE@`
+  - **Webcam** — writes `0`/`1` to the USB device's `authorized` sysfs
+    attribute, so the camera is physically unpowered (not just software-muted).
+- Webcam state persists across reboot/resume/replug via a udev-triggered
+  restore script (the kernel re-authorises USB devices on every enumeration).
+
+## Requirements
+
+- Omarchy shell (Quickshell-based bar)
+- `wireplumber` (`wpctl`)
+- A USB webcam, and one-time root setup for non-root access to its
+  `authorized` attribute (see below)
+
+## Install
+
+```sh
+git clone https://github.com/<you>/omarchy-privacy.git
+cd omarchy-privacy
+./install.sh          # copies the widget + scripts into ~/.config/omarchy
+sudo ./bar/scripts/setup_udev.sh   # one-time: udev rule + restore service
+```
+
+`install.sh` copies:
+
+| Repo path                          | Installed to                                              |
+|------------------------------------|----------------------------------------------------------|
+| `bar/modules/privacy.qml`          | `~/.config/omarchy/bar/modules/privacy.qml`               |
+| `bar/scripts/privacy-control.sh`   | `~/.config/omarchy/bar/scripts/privacy-control.sh`        |
+| `bar/scripts/setup_udev.sh`        | `~/.config/omarchy/bar/scripts/setup_udev.sh`             |
+| `bar/scripts/webcam-restore.sh`    | `~/.config/omarchy/bar/scripts/webcam-restore.sh`         |
+
+Then add the widget to `bar.layout` in `~/.config/omarchy/shell.json`:
+
+```json
+{ "id": "privacy", "type": "qml" }
+```
+
+Reload with `omarchy restart shell`.
+
+## One-time root setup
+
+`setup_udev.sh` (run with `sudo`):
+
+- locates the webcam by USB vendor:product id,
+- installs `/etc/udev/rules.d/99-webcam-toggle.rules` so members of the `wheel`
+  group can write the device's `authorized` attribute,
+- installs a systemd unit that runs `webcam-restore.sh` on device add to
+  re-apply the last saved state,
+- creates `/var/lib/privacy-bar/` for the saved state.
+
+## Notes
+
+- **The webcam is identified by a hard-coded USB id** (`13d3:56a2`,
+  "USB2.0 HD UVC WebCam") in `privacy-control.sh`, `webcam-restore.sh`, and the
+  udev rule. Change these three to match your camera (`lsusb`).
+- Absolute paths are hard-coded as `/home/groot/…` in `privacy.qml` (the
+  `privacy-control.sh` location) and in `setup_udev.sh` (`RESTORE_SCRIPT`).
+  Edit both if your username isn't `groot`.
+- `omarchy update` / `omarchy refresh shell` rewrites `shell.json` and drops the
+  `privacy` layout entry (widget files survive). Re-add it and
+  `omarchy restart shell`.
+
+## License
+
+MIT

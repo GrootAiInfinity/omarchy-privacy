@@ -148,6 +148,9 @@ all; it uses the USB id baked into the unit and the root-owned id file under
   instead. An existing install keeps the old, vulnerable unit until setup is
   re-run:
   `sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/setup_udev.sh`
+- Also in 1.2.0: `WEBCAM_GROUP` in `webcam.conf` now actually takes effect. The
+  group was resolved before the config file was read, so only the environment
+  variable ever worked, despite both being documented.
 - Paths are resolved relative to the installed plugin folder — no username is
   hard-coded. `privacy.qml` finds its backend via `Qt.resolvedUrl(".")`. The
   root-executed half is installed to `/usr/local/lib/omarchy-privacy/` and the

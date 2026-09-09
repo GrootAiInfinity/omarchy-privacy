@@ -36,16 +36,22 @@ fi
 WEBCAM_ID_FILE="${WEBCAM_ID_FILE:-$WEBCAM_STATE_DIR/webcam-usb-id}"
 WEBCAM_STATE_FILE="${WEBCAM_STATE_FILE:-$WEBCAM_STATE_DIR/webcam-state}"
 
-# Extract WEBCAM_USB_ID from a config file *without executing it*. The file
-# lives in a user's home and is writable by that user, while this same library
-# is loaded by code running as root from the restore service — sourcing it would
-# turn "pick my camera" into arbitrary code execution as root on the next boot
-# or replug. Only a literal VID:PID (4 hex digits each, optionally quoted) is
-# accepted; every other line in the file is ignored.
-_webcam_conf_id() {
+# Read one KEY=value assignment out of a config file *without executing it*.
+# The file lives in a user's home and is writable by that user, while this same
+# library is loaded by code running as root from the restore service — sourcing
+# it would turn "pick my camera" into arbitrary code execution as root on the
+# next boot or replug. $3 constrains the accepted value; the quotes are
+# optional and everything else in the file is ignored.
+_webcam_conf_value() {
   [ -r "$1" ] || return 1
-  sed -n "s/^[[:space:]]*WEBCAM_USB_ID[[:space:]]*=[[:space:]]*['\"]\{0,1\}\([0-9a-fA-F]\{4\}:[0-9a-fA-F]\{4\}\)['\"]\{0,1\}[[:space:]]*\$/\1/p" \
+  sed -n "s/^[[:space:]]*$2[[:space:]]*=[[:space:]]*['\"]\{0,1\}\($3\)['\"]\{0,1\}[[:space:]]*\$/\1/p" \
     "$1" 2>/dev/null | head -n1 | grep . || return 1
+}
+_webcam_conf_id() {
+  _webcam_conf_value "$1" WEBCAM_USB_ID '[0-9a-fA-F]\{4\}:[0-9a-fA-F]\{4\}'
+}
+_webcam_conf_group() {
+  _webcam_conf_value "$1" WEBCAM_GROUP '[A-Za-z_][A-Za-z0-9_.-]\{0,31\}'
 }
 
 # Home directory of $SUDO_USER, from passwd rather than an assumed /home/<name>.
@@ -54,8 +60,12 @@ _webcam_sudo_home() {
   getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 | grep . || return 1
 }
 
+# Populates WEBCAM_USB_ID and WEBCAM_GROUP from the environment or the config
+# file. The environment always wins, and the first file that supplies a given
+# key wins for that key. Safe to call more than once.
 _webcam_load_conf() {
-  [ -n "${WEBCAM_USB_ID:-}" ] && return 0
+  [ "${_WEBCAM_CONF_LOADED:-0}" = "1" ] && return 0
+  _WEBCAM_CONF_LOADED=1
 
   # A non-interactive root caller (the restore service, udev) takes no direction
   # from a user-writable file: it uses the id baked into the unit by
@@ -68,8 +78,15 @@ _webcam_load_conf() {
       "${XDG_CONFIG_HOME:-$HOME/.config}/privacy-bar/webcam.conf" \
       ${sudo_home:+"$sudo_home/.config/omarchy-privacy/webcam.conf"} \
       ${sudo_home:+"$sudo_home/.config/privacy-bar/webcam.conf"}; do
-      found="$(_webcam_conf_id "$c" || true)"
-      [ -n "$found" ] && { WEBCAM_USB_ID="$found"; break; }
+      [ -r "$c" ] || continue
+      if [ -z "${WEBCAM_USB_ID:-}" ]; then
+        found="$(_webcam_conf_id "$c" || true)"
+        [ -n "$found" ] && WEBCAM_USB_ID="$found"
+      fi
+      if [ -z "${WEBCAM_GROUP:-}" ]; then
+        found="$(_webcam_conf_group "$c" || true)"
+        [ -n "$found" ] && WEBCAM_GROUP="$found"
+      fi
     done
   fi
 

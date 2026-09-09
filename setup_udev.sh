@@ -39,8 +39,6 @@ LEGACY_SERVICE_NAME="privacy-webcam-restore.service"
 LEGACY_SERVICE_FILE="/etc/systemd/system/$LEGACY_SERVICE_NAME"
 LEGACY_STATE_DIR="/var/lib/privacy-bar"
 
-GROUP="${WEBCAM_GROUP:-wheel}"
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RESTORE_SCRIPT="$LIBDIR/webcam-restore.sh"
 
@@ -78,6 +76,13 @@ export WEBCAM_STATE_DIR
 # opt in explicitly. The value is parsed as a literal VID:PID, never executed.
 export WEBCAM_ALLOW_USER_CONF=1
 . "$SCRIPT_DIR/webcam-lib.sh"
+
+# Resolve the group only after the config has been read. This used to be set
+# before the library was loaded, so WEBCAM_GROUP in webcam.conf was silently
+# ignored and only the environment variable ever took effect, despite both
+# being documented.
+_webcam_load_conf
+GROUP="${WEBCAM_GROUP:-wheel}"
 
 STATE_FILE="$WEBCAM_STATE_FILE"
 ID_FILE="$WEBCAM_ID_FILE"

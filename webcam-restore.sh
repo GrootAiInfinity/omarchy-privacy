@@ -8,10 +8,10 @@
 # setup_udev.sh bakes WEBCAM_USB_ID into this service's environment so the
 # lookup is deterministic even when run from the early-boot udev context.
 
-STATE_FILE="/var/lib/privacy-bar/webcam-state"
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/webcam-lib.sh"
+
+STATE_FILE="$WEBCAM_STATE_FILE"
 
 dev="$(find_webcam_sysfs)" || exit 0
 [ -f "$dev/authorized" ] || exit 0

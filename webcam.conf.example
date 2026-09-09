@@ -1,4 +1,4 @@
-# omarchy-privacy webcam override — copy to ~/.config/privacy-bar/webcam.conf
+# omarchy-privacy webcam override — copy to ~/.config/omarchy-privacy/webcam.conf
 #
 # By default the plugin auto-detects the first USB device that exposes a UVC
 # video interface. Set either value below to override, then re-run

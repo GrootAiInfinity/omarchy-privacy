@@ -1,12 +1,13 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPT_DIR/webcam-lib.sh"
+
 # Persisted last-known camera state, so it can be restored after a reboot
 # (the kernel always re-authorizes/enables the USB device on enumeration and
 # has no memory of what was set before shutdown — see webcam-restore.sh).
-STATE_FILE="/var/lib/privacy-bar/webcam-state"
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "$SCRIPT_DIR/webcam-lib.sh"
+# The path comes from webcam-lib.sh, which also resolves the pre-1.1 location.
+STATE_FILE="$WEBCAM_STATE_FILE"
 
 # Command the user must run once to grant non-root access to the webcam.
 SETUP_CMD="sudo bash '$SCRIPT_DIR/setup_udev.sh'"

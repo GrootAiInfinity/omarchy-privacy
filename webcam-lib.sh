@@ -4,8 +4,9 @@
 #
 # Detection order:
 #   1. $WEBCAM_USB_ID from the environment
-#   2. WEBCAM_USB_ID=VID:PID in ${XDG_CONFIG_HOME:-~/.config}/privacy-bar/webcam.conf
-#      (also checked under $SUDO_USER's home when run via sudo)
+#   2. WEBCAM_USB_ID=VID:PID in ${XDG_CONFIG_HOME:-~/.config}/omarchy-privacy/webcam.conf
+#      (the pre-1.1 privacy-bar/webcam.conf is still read; both are also
+#      checked under $SUDO_USER's home when run via sudo)
 #   3. The USB id persisted by setup_udev.sh ($WEBCAM_ID_FILE) — survives the
 #      camera being toggled off, when interface-class detection cannot work
 #   4. Auto-detect: a USB device exposing a UVC video interface (class 0e)
@@ -16,13 +17,29 @@
 #   webcam_usb_id      -> prints "VID:PID" for that device
 # Both return non-zero and print nothing when no webcam is found.
 
-WEBCAM_ID_FILE="${WEBCAM_ID_FILE:-/var/lib/privacy-bar/webcam-usb-id}"
+# System-side state store. The namespaced directory is authoritative; the
+# pre-1.1 path is still honoured when an older setup_udev.sh run is in place,
+# so updating the plugin without re-running setup cannot lose the saved camera
+# state (and silently power the camera back on at the next boot).
+WEBCAM_STATE_DIR_DEFAULT="/var/lib/omarchy-privacy"
+WEBCAM_STATE_DIR_LEGACY="/var/lib/privacy-bar"
+if [ -z "${WEBCAM_STATE_DIR:-}" ]; then
+  if [ ! -d "$WEBCAM_STATE_DIR_DEFAULT" ] && [ -d "$WEBCAM_STATE_DIR_LEGACY" ]; then
+    WEBCAM_STATE_DIR="$WEBCAM_STATE_DIR_LEGACY"
+  else
+    WEBCAM_STATE_DIR="$WEBCAM_STATE_DIR_DEFAULT"
+  fi
+fi
+WEBCAM_ID_FILE="${WEBCAM_ID_FILE:-$WEBCAM_STATE_DIR/webcam-usb-id}"
+WEBCAM_STATE_FILE="${WEBCAM_STATE_FILE:-$WEBCAM_STATE_DIR/webcam-state}"
 
 _webcam_load_conf() {
   [ -n "${WEBCAM_USB_ID:-}" ] && return 0
   local c
   for c in \
+    "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-privacy/webcam.conf" \
     "${XDG_CONFIG_HOME:-$HOME/.config}/privacy-bar/webcam.conf" \
+    ${SUDO_USER:+"/home/$SUDO_USER/.config/omarchy-privacy/webcam.conf"} \
     ${SUDO_USER:+"/home/$SUDO_USER/.config/privacy-bar/webcam.conf"}; do
     [ -r "$c" ] && { . "$c" 2>/dev/null; break; }
   done

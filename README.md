@@ -42,7 +42,7 @@ service points at the new path.
 ## Uninstall
 
 If you ran the root setup, undo it **before** removing the plugin — the udev
-rule, the restore service and `/var/lib/privacy-bar` live outside the plugin
+rule, the restore service and `/var/lib/omarchy-privacy` live outside the plugin
 folder and `omarchy plugin remove` does not touch them:
 
 ```sh
@@ -52,10 +52,12 @@ omarchy plugin remove io.github.grootaiinfinity.privacy
 
 `uninstall_udev.sh` re-authorises the camera first (so a camera left toggled
 off does not stay off once the restore service is gone), then removes
-`/etc/udev/rules.d/99-webcam-toggle.rules`,
-`/etc/systemd/system/privacy-webcam-restore.service` and `/var/lib/privacy-bar`,
-and reloads systemd and udev. Your own `~/.config/privacy-bar/webcam.conf` is
-left alone.
+`/etc/udev/rules.d/99-omarchy-privacy-webcam.rules`,
+`/etc/systemd/system/omarchy-privacy-webcam-restore.service` and
+`/var/lib/omarchy-privacy`, and reloads systemd and udev. Each of those is
+removed only if it carries this plugin's marker line, so a same-named file
+belonging to something else is left where it is. Your own
+`~/.config/omarchy-privacy/webcam.conf` is left alone.
 
 If you never ran `setup_udev.sh`, then
 `omarchy plugin remove io.github.grootaiinfinity.privacy` is all you need.
@@ -65,12 +67,21 @@ If you never ran `setup_udev.sh`, then
 `setup_udev.sh` (run with `sudo`):
 
 - auto-detects the webcam (first USB device exposing a UVC video interface),
-- installs `/etc/udev/rules.d/99-webcam-toggle.rules` so members of the `wheel`
-  group can write the device's `authorized` attribute,
+- installs `/etc/udev/rules.d/99-omarchy-privacy-webcam.rules` so members of
+  the `wheel` group can write the device's `authorized` attribute — that is
+  every member of the group, not only the user who ran the setup,
 - installs a systemd unit that runs `webcam-restore.sh` on device add to
   re-apply the last saved state (the detected USB id is baked into the unit's
   environment so early-boot lookups are deterministic),
-- creates `/var/lib/privacy-bar/` for the saved state.
+- creates `/var/lib/omarchy-privacy/` for the saved state.
+
+Both files it writes into `/etc` carry a
+`# managed by the io.github.grootaiinfinity.privacy plugin` marker line, and an
+existing file at either path without that marker is never overwritten: the
+setup stops and names it (`PRIVACY_FORCE=1` overrides). Upgrading from a
+pre-1.1 install migrates the older, un-namespaced
+`99-webcam-toggle.rules` / `privacy-webcam-restore.service` /
+`/var/lib/privacy-bar` across, keeping the saved camera state.
 
 ## Configuration
 
@@ -78,8 +89,8 @@ Auto-detection covers the common single-webcam laptop. Override it with a
 `webcam.conf` (see `webcam.conf.example`):
 
 ```sh
-mkdir -p ~/.config/privacy-bar
-printf 'WEBCAM_USB_ID=13d3:56a2\n' > ~/.config/privacy-bar/webcam.conf
+mkdir -p ~/.config/omarchy-privacy
+printf 'WEBCAM_USB_ID=13d3:56a2\n' > ~/.config/omarchy-privacy/webcam.conf
 # re-run after changing webcam.conf
 sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/setup_udev.sh
 ```

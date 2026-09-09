@@ -35,9 +35,30 @@ one-time root setup (the panel also copies this command to your clipboard):
 sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh
 ```
 
-Remove with `omarchy plugin remove groot.privacy`; update with
-`omarchy plugin update groot.privacy`. After an update that moved the folder,
-re-run `setup_udev.sh` so the webcam restore service points at the new path.
+Update with `omarchy plugin update groot.privacy`. After an update that moved
+the folder, re-run `setup_udev.sh` so the webcam restore service points at the
+new path.
+
+## Uninstall
+
+If you ran the root setup, undo it **before** removing the plugin — the udev
+rule, the restore service and `/var/lib/privacy-bar` live outside the plugin
+folder and `omarchy plugin remove` does not touch them:
+
+```sh
+sudo ~/.config/omarchy/plugins/groot.privacy/uninstall_udev.sh
+omarchy plugin remove groot.privacy
+```
+
+`uninstall_udev.sh` re-authorises the camera first (so a camera left toggled
+off does not stay off once the restore service is gone), then removes
+`/etc/udev/rules.d/99-webcam-toggle.rules`,
+`/etc/systemd/system/privacy-webcam-restore.service` and `/var/lib/privacy-bar`,
+and reloads systemd and udev. Your own `~/.config/privacy-bar/webcam.conf` is
+left alone.
+
+If you never ran `setup_udev.sh`, `omarchy plugin remove groot.privacy` is all
+you need.
 
 ## One-time root setup
 

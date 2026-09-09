@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "id": "io.github.grootaiinfinity.privacy",
   "name": "Privacy Controls",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "groot",
   "license": "MIT",
   "description": "One-click microphone mute and webcam power-off in the bar, with udev-backed webcam state that survives reboot/resume.",

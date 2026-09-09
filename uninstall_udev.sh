@@ -21,6 +21,7 @@ RULE_FILE="/etc/udev/rules.d/99-omarchy-privacy-webcam.rules"
 SERVICE_NAME="omarchy-privacy-webcam-restore.service"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
 STATE_DIR="/var/lib/omarchy-privacy"
+LIBDIR="/usr/local/lib/omarchy-privacy"
 
 # Pre-1.1 locations, cleaned up too when the content is recognisably ours.
 LEGACY_RULE_FILE="/etc/udev/rules.d/99-webcam-toggle.rules"
@@ -34,6 +35,9 @@ if [ "${EUID:-$(id -u)}" -ne 0 ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Same as setup: an admin ran this deliberately, so an explicitly pinned camera
+# in the user's config is honoured (parsed as a literal VID:PID, never executed).
+export WEBCAM_ALLOW_USER_CONF=1
 . "$SCRIPT_DIR/webcam-lib.sh"
 
 # Re-enable the camera while the persisted USB id is still on disk — after
@@ -78,6 +82,13 @@ for d in "$STATE_DIR" "$LEGACY_STATE_DIR"; do
   echo "Removing state store $d ..."
   rm -rf "$d"
 done
+
+# The root-owned copies of the scripts the service used to run.
+if [ -d "$LIBDIR" ]; then
+  echo "Removing $LIBDIR ..."
+  rm -f "$LIBDIR/webcam-restore.sh" "$LIBDIR/webcam-lib.sh"
+  rmdir "$LIBDIR" 2>/dev/null || echo "Leaving $LIBDIR — it is not empty." >&2
+fi
 
 echo "Reloading systemd units..."
 systemctl daemon-reload

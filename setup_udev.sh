@@ -25,6 +25,13 @@ RULE_FILE="/etc/udev/rules.d/99-omarchy-privacy-webcam.rules"
 SERVICE_NAME="omarchy-privacy-webcam-restore.service"
 SERVICE_FILE="/etc/systemd/system/$SERVICE_NAME"
 
+# Everything root executes lives here, root-owned and writable by nobody else.
+# The plugin checkout is inside the user's home, so a service or udev rule
+# pointing at it would let anyone who can write that directory run code as root
+# at the next boot or camera replug. The checkout is the *source*; this is what
+# actually gets run.
+LIBDIR="/usr/local/lib/omarchy-privacy"
+
 # Pre-1.1 locations. Generic enough to collide with something else on the
 # system, which is why they were renamed; migrated below when they are ours.
 LEGACY_RULE_FILE="/etc/udev/rules.d/99-webcam-toggle.rules"
@@ -35,7 +42,7 @@ LEGACY_STATE_DIR="/var/lib/privacy-bar"
 GROUP="${WEBCAM_GROUP:-wheel}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-RESTORE_SCRIPT="$SCRIPT_DIR/webcam-restore.sh"
+RESTORE_SCRIPT="$LIBDIR/webcam-restore.sh"
 
 if [ "${EUID:-$(id -u)}" -ne 0 ]; then
   echo "ERROR: must run as root (use sudo)." >&2
@@ -65,6 +72,11 @@ fi
 
 WEBCAM_STATE_DIR="$STATE_DIR"
 export WEBCAM_STATE_DIR
+# The library refuses to read a user-writable config when it is loaded by root
+# non-interactively. Setup is different: an admin ran it on purpose and the
+# documented way to pin a camera is ~/.config/omarchy-privacy/webcam.conf, so
+# opt in explicitly. The value is parsed as a literal VID:PID, never executed.
+export WEBCAM_ALLOW_USER_CONF=1
 . "$SCRIPT_DIR/webcam-lib.sh"
 
 STATE_FILE="$WEBCAM_STATE_FILE"
@@ -127,6 +139,20 @@ fi
 chgrp "$GROUP" "$STATE_FILE"
 chmod g+w "$STATE_FILE"
 
+echo "Installing root-executed helpers at $LIBDIR ..."
+install -d -m 0755 -o root -g root "$LIBDIR"
+install -m 0755 -o root -g root "$SCRIPT_DIR/webcam-restore.sh" "$LIBDIR/webcam-restore.sh"
+install -m 0644 -o root -g root "$SCRIPT_DIR/webcam-lib.sh"     "$LIBDIR/webcam-lib.sh"
+
+# Verify rather than assume: if these are not root-owned and unwritable by
+# anyone else, the service below must not be created pointing at them.
+for f in "$LIBDIR" "$LIBDIR/webcam-restore.sh" "$LIBDIR/webcam-lib.sh"; do
+  if [ "$(stat -c '%u' "$f")" != "0" ] || [ -n "$(find "$f" -maxdepth 0 -perm /022 -print)" ]; then
+    echo "ERROR: $f is not root-owned or is writable by others — refusing to continue." >&2
+    exit 1
+  fi
+done
+
 echo "Installing restore-on-boot service at $SERVICE_FILE..."
 cat << EOF > "$SERVICE_FILE"
 $MARKER
@@ -137,6 +163,15 @@ Description=Restore omarchy-privacy webcam authorized state
 Type=oneshot
 Environment=WEBCAM_USB_ID=$VENDOR_ID:$PRODUCT_ID
 ExecStart=$RESTORE_SCRIPT
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
 EOF
 
 echo "Creating udev rule at $RULE_FILE..."

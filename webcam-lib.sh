@@ -6,7 +6,10 @@
 #   1. $WEBCAM_USB_ID from the environment
 #   2. WEBCAM_USB_ID=VID:PID in ${XDG_CONFIG_HOME:-~/.config}/omarchy-privacy/webcam.conf
 #      (the pre-1.1 privacy-bar/webcam.conf is still read; both are also
-#      checked under $SUDO_USER's home when run via sudo)
+#      checked under $SUDO_USER's home when run via sudo). The file is *parsed*,
+#      never sourced, and is only consulted for an unprivileged caller or when a
+#      caller opts in explicitly (WEBCAM_ALLOW_USER_CONF=1, which setup_udev.sh
+#      sets because the admin runs it deliberately).
 #   3. The USB id persisted by setup_udev.sh ($WEBCAM_ID_FILE) — survives the
 #      camera being toggled off, when interface-class detection cannot work
 #   4. Auto-detect: a USB device exposing a UVC video interface (class 0e)
@@ -33,21 +36,48 @@ fi
 WEBCAM_ID_FILE="${WEBCAM_ID_FILE:-$WEBCAM_STATE_DIR/webcam-usb-id}"
 WEBCAM_STATE_FILE="${WEBCAM_STATE_FILE:-$WEBCAM_STATE_DIR/webcam-state}"
 
+# Extract WEBCAM_USB_ID from a config file *without executing it*. The file
+# lives in a user's home and is writable by that user, while this same library
+# is loaded by code running as root from the restore service — sourcing it would
+# turn "pick my camera" into arbitrary code execution as root on the next boot
+# or replug. Only a literal VID:PID (4 hex digits each, optionally quoted) is
+# accepted; every other line in the file is ignored.
+_webcam_conf_id() {
+  [ -r "$1" ] || return 1
+  sed -n "s/^[[:space:]]*WEBCAM_USB_ID[[:space:]]*=[[:space:]]*['\"]\{0,1\}\([0-9a-fA-F]\{4\}:[0-9a-fA-F]\{4\}\)['\"]\{0,1\}[[:space:]]*\$/\1/p" \
+    "$1" 2>/dev/null | head -n1 | grep . || return 1
+}
+
+# Home directory of $SUDO_USER, from passwd rather than an assumed /home/<name>.
+_webcam_sudo_home() {
+  [ -n "${SUDO_USER:-}" ] || return 1
+  getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6 | grep . || return 1
+}
+
 _webcam_load_conf() {
   [ -n "${WEBCAM_USB_ID:-}" ] && return 0
-  local c
-  for c in \
-    "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-privacy/webcam.conf" \
-    "${XDG_CONFIG_HOME:-$HOME/.config}/privacy-bar/webcam.conf" \
-    ${SUDO_USER:+"/home/$SUDO_USER/.config/omarchy-privacy/webcam.conf"} \
-    ${SUDO_USER:+"/home/$SUDO_USER/.config/privacy-bar/webcam.conf"}; do
-    [ -r "$c" ] && { . "$c" 2>/dev/null; break; }
-  done
-  # Fall back to the id persisted by setup_udev.sh.
+
+  # A non-interactive root caller (the restore service, udev) takes no direction
+  # from a user-writable file: it uses the id baked into the unit by
+  # setup_udev.sh, or the root-owned id file below, and nothing else.
+  if [ "${EUID:-$(id -u)}" -ne 0 ] || [ "${WEBCAM_ALLOW_USER_CONF:-0}" = "1" ]; then
+    local c sudo_home found
+    sudo_home="$(_webcam_sudo_home || true)"
+    for c in \
+      "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy-privacy/webcam.conf" \
+      "${XDG_CONFIG_HOME:-$HOME/.config}/privacy-bar/webcam.conf" \
+      ${sudo_home:+"$sudo_home/.config/omarchy-privacy/webcam.conf"} \
+      ${sudo_home:+"$sudo_home/.config/privacy-bar/webcam.conf"}; do
+      found="$(_webcam_conf_id "$c" || true)"
+      [ -n "$found" ] && { WEBCAM_USB_ID="$found"; break; }
+    done
+  fi
+
+  # Fall back to the id persisted by setup_udev.sh (root-owned, 0644).
   if [ -z "${WEBCAM_USB_ID:-}" ] && [ -r "$WEBCAM_ID_FILE" ]; then
     local saved; saved="$(cat "$WEBCAM_ID_FILE" 2>/dev/null)"
     case "$saved" in
-      [0-9a-fA-F]*:[0-9a-fA-F]*) WEBCAM_USB_ID="$saved" ;;
+      [0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]) WEBCAM_USB_ID="$saved" ;;
     esac
   fi
   return 0

@@ -2,7 +2,7 @@
 # Undo setup_udev.sh — remove the system-side state the privacy bar plugin
 # installs for the webcam toggle.
 #
-# Run as root:  sudo ~/.config/omarchy/plugins/groot.privacy/uninstall_udev.sh
+# Run as root:  sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/uninstall_udev.sh
 #
 # Removes the udev rule, the restore-on-enumeration service and the persistent
 # state directory. The camera is re-authorised first: once the state file and
@@ -60,4 +60,4 @@ echo "Udev configuration removed."
 echo "The webcam is back under the kernel default (authorized, group-writable"
 echo "permissions dropped on the next re-enumeration)."
 echo "Your own config at ~/.config/privacy-bar/webcam.conf was left in place."
-echo "Remove the plugin itself with: omarchy plugin remove groot.privacy"
+echo "Remove the plugin itself with: omarchy plugin remove io.github.grootaiinfinity.privacy"

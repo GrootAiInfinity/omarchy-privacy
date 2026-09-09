@@ -32,12 +32,12 @@ The **mic toggle works immediately**. For the **webcam toggle**, run the
 one-time root setup (the panel also copies this command to your clipboard):
 
 ```sh
-sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh
+sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/setup_udev.sh
 ```
 
-Update with `omarchy plugin update groot.privacy`. After an update that moved
-the folder, re-run `setup_udev.sh` so the webcam restore service points at the
-new path.
+Update with `omarchy plugin update io.github.grootaiinfinity.privacy`. After an
+update that moved the folder, re-run `setup_udev.sh` so the webcam restore
+service points at the new path.
 
 ## Uninstall
 
@@ -46,8 +46,8 @@ rule, the restore service and `/var/lib/privacy-bar` live outside the plugin
 folder and `omarchy plugin remove` does not touch them:
 
 ```sh
-sudo ~/.config/omarchy/plugins/groot.privacy/uninstall_udev.sh
-omarchy plugin remove groot.privacy
+sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/uninstall_udev.sh
+omarchy plugin remove io.github.grootaiinfinity.privacy
 ```
 
 `uninstall_udev.sh` re-authorises the camera first (so a camera left toggled
@@ -57,8 +57,8 @@ off does not stay off once the restore service is gone), then removes
 and reloads systemd and udev. Your own `~/.config/privacy-bar/webcam.conf` is
 left alone.
 
-If you never ran `setup_udev.sh`, `omarchy plugin remove groot.privacy` is all
-you need.
+If you never ran `setup_udev.sh`, then
+`omarchy plugin remove io.github.grootaiinfinity.privacy` is all you need.
 
 ## One-time root setup
 
@@ -80,7 +80,8 @@ Auto-detection covers the common single-webcam laptop. Override it with a
 ```sh
 mkdir -p ~/.config/privacy-bar
 printf 'WEBCAM_USB_ID=13d3:56a2\n' > ~/.config/privacy-bar/webcam.conf
-sudo ~/.config/omarchy/plugins/groot.privacy/setup_udev.sh   # re-run after changing
+# re-run after changing webcam.conf
+sudo ~/.config/omarchy/plugins/io.github.grootaiinfinity.privacy/setup_udev.sh
 ```
 
 - `WEBCAM_USB_ID=VID:PID` — pick a specific camera (from `lsusb`), e.g. when the
@@ -97,7 +98,7 @@ Both are also read from the environment, so
   `setup_udev.sh` bakes its own directory into the systemd unit.
 - `omarchy update` / `omarchy refresh shell` rewrites `shell.json` and drops the
   `privacy` layout entry (widget files survive). Re-run
-  `omarchy plugin enable groot.privacy` and `omarchy restart shell`.
+  `omarchy plugin enable io.github.grootaiinfinity.privacy` and `omarchy restart shell`.
 - After an `omarchy plugin update` that relocates the folder, re-run
   `setup_udev.sh` so the restore service points at the new path.
 

@@ -7,8 +7,8 @@ import qs.Commons
 
 Panel {
   id: root
-  moduleName: "groot.privacy"
-  ipcTarget: "groot.privacy"
+  moduleName: "io.github.grootaiinfinity.privacy"
+  ipcTarget: "io.github.grootaiinfinity.privacy"
 
   // This plugin's own folder, wherever `omarchy plugin add` installed it.
   readonly property string pluginDir: {

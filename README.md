@@ -123,8 +123,8 @@ all; it uses the USB id baked into the unit and the root-owned id file under
 
 - The bar widget and `privacy-control.sh` run **unprivileged**. Muting the mic
   is `wpctl`; switching the camera is a write to the USB device's `authorized`
-  attribute, made possible by the group permission the udev rule grants — no
-  `sudo`, no `pkexec`, no setuid helper at run time.
+  attribute, made possible by the group permission the udev rule grants. No
+  privilege escalation, and no setuid helper, is involved at run time.
 - Root runs only two things, both installed by `setup_udev.sh` into
   `/usr/local/lib/omarchy-privacy/` as root:root and verified there before the
   unit is written: `webcam-restore.sh` and the `webcam-lib.sh` it loads. Nothing
